@@ -55,7 +55,12 @@
        db user-ref))
 
 (defn find-work [db user-ref]
-  (d/q '[:find [(pull [* {:work/task []}])]]))
+  (d/q '[:find [(pull ?w [* {:work/task [:task/name]}])]
+         :in $ ?user
+         :where
+         [?t :task/user ?user]
+         [?w :work/task ?t]]
+       db user-ref))
 
 (defn authorize-user [db login password]
   (when-let [[user] (find-user db login)]

@@ -5,7 +5,10 @@
             [compojure.core :refer [ANY GET POST defroutes]]
             [compojure.route :refer [not-found]]
 
+            [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.session :refer [wrap-session]]
+            [ring.middleware.stacktrace :refer [wrap-stacktrace]]
 
             [what-next-server.db :as db]
             [what-next-server.routes :as r]
@@ -16,13 +19,13 @@
     (let [conn (get-in webserver [:db :conn])]
       (handler (assoc req :conn conn)))))
 
-(defroutes app-routes
-  (GET "/" [] r/do-login))
-
 (defn app [webserver]
-  (-> #'app-routes
+  (-> #'r/app-routes
       (wrap-conn webserver)
-      (wrap-session)))
+      (wrap-session)
+      (wrap-stacktrace)
+      (wrap-keyword-params)
+      (wrap-params)))
 
 (defrecord Webserver [config]
   component/Lifecycle
@@ -53,6 +56,10 @@
 
 (defn stop []
   (alter-var-root #'system component/stop))
+
+(defn restart! []
+  (stop)
+  (init))
 
 (defn main []
   (component/start (what-next-system {})))

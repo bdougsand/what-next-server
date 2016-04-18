@@ -1,4 +1,4 @@
-(parcelons what-next-server.db
+(ns what-next-server.db
   (:require [com.stuartsierra.component :as component]
             [datomic.api :as d]
             [datomic-schema.schema :as s]
