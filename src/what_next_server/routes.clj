@@ -49,7 +49,26 @@
     "Done"))
 
 
-(defn add-work [{{:keys []} :params}])
+(defn add-work [{:keys [params conn user-id]}]
+  (let [{:keys [task start duration notes]} params
+        start (or start (when duration
+                          (-> (java.util.Date.)
+                              (.getTime)
+                              (- duration))))]
+    (if (and task start duration)
+      (try
+        (let [start (java.util.Date. (Long/parseLong start))
+              duration (Integer/parseInt duration)]
+          (let [tx (d/transact
+                    conn (users/record-work
+                          (d/db conn) user-id task start duration notes))]
+            (json-response
+             {:success "Work added"})))
+        (catch Exception exc
+          (-> (json-response {:error (.getMessage exc)})
+              (resp/status 500))))
+      (-> (json-response {:error (str "Missing key(s)")})
+          (resp/status 400)))))
 
 
 (defn work-list [req]
@@ -57,7 +76,7 @@
     (json-response
      {:work (for [work (users/find-work (d/db (:conn req)) user-id)]
               {:task (:task/name (:work/task work))
-               :start (:work/start work)
+               :start (.getTime (:work/start work))
                :duration (:work/duration work)
                :notes (:work/notes work)})})))
 
@@ -94,11 +113,13 @@
 
 (defroutes user-routes
   (GET "/work" [] work-list)
+  (GET "/record" [] add-work)
   (GET "/who" [] whoami))
 
 
 (defroutes app-routes
   (POST "/create" [] create-user)
+  (POST "/login" [] do-login)
   (GET "/users" [] user-list)
   (GET "/force" [] force-login)
   (GET "/logout" [] logout)

@@ -82,17 +82,18 @@
       :task/name new-name}]))
 
 (defn record-work [db user-ref task-name start duration notes]
-  (let [task-id (find-task-id db user-ref task-name)]
+  (let [task-id (find-task-id db user-ref task-name)
+        ref-id (or task-id (d/tempid :db.part/user))]
     (concat
      (when-not task-id
-       [{:db/id #db/id[:db.part/user -1]
+       [{:db/id ref-id
          :task/name task-name
          :task/user user-ref}])
      [{:db/id #db/id[:db.part/user -2]
        :work/start start
        :work/duration duration
        :work/notes notes
-       :work/task (or task-id -1)}])))
+       :work/task ref-id}])))
 
 (comment
   )
